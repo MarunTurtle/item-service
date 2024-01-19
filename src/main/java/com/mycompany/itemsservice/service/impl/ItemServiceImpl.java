@@ -1,5 +1,6 @@
 package com.mycompany.itemsservice.service.impl;
 
+import com.mycompany.itemsservice.converter.ItemConverter;
 import com.mycompany.itemsservice.dto.ItemDTO;
 import com.mycompany.itemsservice.entity.ItemEntity;
 import com.mycompany.itemsservice.repository.ItemRepository;
@@ -17,6 +18,8 @@ import java.util.Optional;
 public class ItemServiceImpl implements ItemService {
     @Autowired
     private ItemRepository itemRepository;
+    @Autowired
+    private ItemConverter itemConverter;
     @Override
     public ItemDTO addItem(ItemDTO itemDTO) {
         ItemEntity itemEntity = new ItemEntity();
@@ -54,13 +57,9 @@ public class ItemServiceImpl implements ItemService {
         List<ItemEntity> itemEntities = itemRepository.findAllByTitleContains(title);
         List<ItemDTO> dtoList = null;
         if(!itemEntities.isEmpty()){
-            ItemDTO itemDTO = null;
             dtoList = new ArrayList<>();
             for(ItemEntity ie : itemEntities){
-                itemDTO = new ItemDTO();
-                BeanUtils.copyProperties(ie, itemDTO);
-                itemDTO.set_id(ie.getId());
-                dtoList.add(itemDTO);
+                dtoList.add(itemConverter.convertEntity2Dto(ie));
             }
         }
         return dtoList;
@@ -70,10 +69,8 @@ public class ItemServiceImpl implements ItemService {
     public ItemDTO getDetail(Long id) {
         Optional<ItemEntity> optIe = itemRepository.findById(id);
         ItemDTO itemDTO = null;
-        if(optIe.isEmpty()){
-            itemDTO = new ItemDTO();
-            BeanUtils.copyProperties(optIe.get(), itemDTO);
-            itemDTO.set_id(optIe.get().getId());
+        if(!optIe.isEmpty()){
+            itemDTO = itemConverter.convertEntity2Dto(optIe.get());
         }
         return itemDTO;
     }
@@ -81,15 +78,13 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDTO updateItem(Long id, ItemDTO itemDTO) {//full update
         Optional<ItemEntity> optIe = itemRepository.findById(id);
-        if(optIe.isEmpty()){
+        if(optIe.isPresent()){
             ItemEntity ie = optIe.get();
             ie.setTitle(itemDTO.getTitle());
             ie.setDescription(itemDTO.getDescription());
             ie.setUpdatedAt(LocalDateTime.now());
             ie = itemRepository.save(ie);
-            itemDTO = new ItemDTO();
-            BeanUtils.copyProperties(ie, itemDTO);
-            itemDTO.set_id(optIe.get().getId());
+            itemDTO = itemConverter.convertEntity2Dto(ie);
         }
         return itemDTO;
     }
@@ -98,14 +93,12 @@ public class ItemServiceImpl implements ItemService {
     public ItemDTO updateItemTitle(Long id, String title) {
         Optional<ItemEntity> optIe = itemRepository.findById(id);
         ItemDTO itemDTO = null;
-        if(optIe.isEmpty()){
+        if(optIe.isPresent()){
             ItemEntity ie = optIe.get();
             ie.setTitle(title);
             ie.setUpdatedAt(LocalDateTime.now());
             ie = itemRepository.save(ie);
-            itemDTO = new ItemDTO();
-            BeanUtils.copyProperties(ie, itemDTO);
-            itemDTO.set_id(optIe.get().getId());
+            itemDTO = itemConverter.convertEntity2Dto(ie);
         }
         return itemDTO;
     }
